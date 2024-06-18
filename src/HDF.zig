@@ -1,5 +1,7 @@
 const std = @import("std");
 
+const current_version: std.SemanticVersion = .{.major = 1, .minor = 14, .patch = 4};
+
 const HDF = @This();
 
 const c = @cImport({
@@ -15,50 +17,46 @@ pub const H5Error = error{
     GenericError,
 };
 
-pub fn H5Open() !void {
+pub fn open() !void {
     const herr = c.H5open();
 
     if (herr < 0) {
         return H5Error.InitializationError;
     }
-
 }
 
-pub fn H5Close() !void {
+pub fn close() !void {
     const herr = c.H5close();
 
     if (herr < 0) {
         return H5Error.DestructionError;
     }
-
 }
 
-pub fn H5GarbageCollect() !void {
+pub fn garbageCollect() !void {
     const herr = c.H5garbage_collect();
 
     if (herr < 0) {
         return H5Error.GarbageCollectionError;
     }
-
 }
 
-pub fn H5GetLibVersion() !std.SemanticVersion {
-    var majnum: c_uint = undefined;
-    var minornum: c_uint = undefined;
-    var patchnum:c_uint = undefined;
-    const herr = c.H5get_libversion(&majnum, &minornum, &patchnum);
+pub fn getLibVersion() !std.SemanticVersion {
+    var major: c_uint = undefined;
+    var minor: c_uint = undefined;
+    var patch: c_uint = undefined;
+    const herr = c.H5get_libversion(&major, &minor, &patch);
 
     if (herr < 0) {
         return H5Error.GenericError;
     }
 
-
-    const lib_version: std.SemanticVersion = std.SemanticVersion{.major = majnum, .minor = minornum, .patch = patchnum};
+    const lib_version: std.SemanticVersion = std.SemanticVersion{ .major = major, .minor = minor, .patch = patch };
 
     return lib_version;
 }
 
-pub fn H5FreeMemory(buf: *anyopaque) !void {
+pub fn freeMemory(buf: *anyopaque) !void {
     const herr = c.H5free_memory(buf);
 
     if (herr < 0) {
@@ -66,7 +64,7 @@ pub fn H5FreeMemory(buf: *anyopaque) !void {
     }
 }
 
-pub fn H5IsLibraryThreadSafe() !bool {
+pub fn isLibraryThreadSafe() !bool {
     var is_safe: bool = undefined;
     const herr = c.H5is_library_threadsafe(&is_safe);
 
@@ -77,10 +75,20 @@ pub fn H5IsLibraryThreadSafe() !bool {
     return is_safe;
 }
 
-pub fn H5SetFreeListLimits(lims: H5Limits) !void {
+pub fn setFreeLimits(lims: H5Limits) !void {
     const herr = c.H5set_free_list_limits(lims.regular_limit_global, lims.regular_limit_list, lims.arr_limit_global, lims.arr_limit_list, lims.block_limit_global, lims.block_limit_list);
 
     if (herr < 0) {
         return H5Error.GenericError;
     }
 }
+
+test "getLibVersion" {
+    try open();
+    const version = try getLibVersion();
+    try std.testing.expect(current_version.major == version.major);
+    try std.testing.expect(current_version.minor == version.minor);
+    try std.testing.expect(current_version.patch == version.patch);
+    try close();
+}
+
