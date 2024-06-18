@@ -1,2 +1,4 @@
 .zig-cache/
+zls.json
 zig-out/
+build/
